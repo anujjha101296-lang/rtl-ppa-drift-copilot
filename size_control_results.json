@@ -1,0 +1,52 @@
+{
+ "size_only (n_in, n_out)": {
+  "depth_rnd_R2": 0.717,
+  "depth_rnd_MAE": 6.54,
+  "depth_lofo_R2": 0.645,
+  "depth_lofo_MAE": 8.18,
+  "cells_rnd_R2": 0.473,
+  "cells_rnd_MAE": 66.29,
+  "cells_lofo_R2": 0.286,
+  "cells_lofo_MAE": 89.05
+ },
+ "size_wide (ports, cells, edges, widths)": {
+  "depth_rnd_R2": 0.789,
+  "depth_rnd_MAE": 5.83,
+  "depth_lofo_R2": 0.433,
+  "depth_lofo_MAE": 11.9,
+  "cells_rnd_R2": 0.554,
+  "cells_rnd_MAE": 53.48,
+  "cells_lofo_R2": 0.226,
+  "cells_lofo_MAE": 83.83
+ },
+ "no_ports (everything except n_in, n_out)": {
+  "depth_rnd_R2": 0.848,
+  "depth_rnd_MAE": 4.5,
+  "depth_lofo_R2": 0.353,
+  "depth_lofo_MAE": 10.48,
+  "cells_rnd_R2": 0.716,
+  "cells_rnd_MAE": 43.75,
+  "cells_lofo_R2": 0.186,
+  "cells_lofo_MAE": 81.81
+ },
+ "structure_only (type counts + path features)": {
+  "depth_rnd_R2": 0.857,
+  "depth_rnd_MAE": 4.49,
+  "depth_lofo_R2": 0.223,
+  "depth_lofo_MAE": 10.92,
+  "cells_rnd_R2": 0.735,
+  "cells_rnd_MAE": 43.38,
+  "cells_lofo_R2": 0.103,
+  "cells_lofo_MAE": 86.99
+ },
+ "full": {
+  "depth_rnd_R2": 0.93,
+  "depth_rnd_MAE": 3.37,
+  "depth_lofo_R2": 0.651,
+  "depth_lofo_MAE": 8.05,
+  "cells_rnd_R2": 0.763,
+  "cells_rnd_MAE": 36.24,
+  "cells_lofo_R2": 0.404,
+  "cells_lofo_MAE": 71.87
+ }
+}
