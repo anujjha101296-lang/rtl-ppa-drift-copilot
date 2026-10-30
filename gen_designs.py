@@ -87,8 +87,14 @@ endmodule"""
 def alu(W, nops):
     ops = ["a+b", "a-b", "a&b", "a|b", "a^b", "~(a&b)", "a<<1", "a>>1",
            "{{{0}{{a<b}}}}", "a^(a>>1)", "b-a", "~a"]
-    cases = "\n".join(f"      3'd{i}: y = {ops[i].format(W-1) if i!=8 else '{'+str(W-1)+"'b0,"+'(a<b)}'};"
-                      for i in range(nops))
+    case_lines = []
+    for i in range(nops):
+        if i == 8:
+            expr = "{{" + str(W - 1) + "{1'b0}}, (a<b)}"
+        else:
+            expr = ops[i].format(W - 1)
+        case_lines.append(f"      3'd{i}: y = {expr};")
+    cases = "\\n".join(case_lines)
     return f"""module top(input [{W-1}:0] a,b, input [2:0] op, output reg [{W-1}:0] y);
   always @* begin
     case (op)
