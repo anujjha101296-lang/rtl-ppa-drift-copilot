@@ -93,7 +93,7 @@ def alu(W, nops):
             expr = "{{" + str(W - 1) + "{1'b0}}, (a<b)}"
         else:
             expr = ops[i].format(W - 1)
-        case_lines.append(f"      3'd{i}: y = {expr};")
+        case_lines.append(f"      {i}: y = {expr};")
     cases = "\\n".join(case_lines)
     return f"""module top(input [{W-1}:0] a,b, input [2:0] op, output reg [{W-1}:0] y);
   always @* begin
