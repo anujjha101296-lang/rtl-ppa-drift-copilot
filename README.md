@@ -2,7 +2,7 @@
 
 Predict post-synthesis logic depth and mapped gate count from a **pre-synthesis Yosys RTL graph**, then compare two RTL revisions for likely structural regressions.
 
-> **Reproducibility status:** The checked-in `dataset.json` and result JSON files are historical result snapshots. The generated RTL corpus, pre-synthesis graph JSON files, and trained `model.pkl` are intentionally generated locally/CI and are not included in a fresh clone. Run the full pipeline below before using the prediction CLI. Reported metrics are historical until reproduced in your own toolchain.
+> **Reproducibility status:** The generated RTL corpus, pre-synthesis graph JSON files, and trained `model.pkl` are intentionally generated locally/CI and are not included in a fresh clone. The GitHub Actions rebuild has successfully synthesized all 315 designs across 29 families, trained/evaluated the model, checked artifacts, and exercised both CLI commands including Yosys/ABC verification. Metrics below are from that reproducible CI run; exact values can vary with tool versions.
 
 ## Pipeline
 
@@ -63,10 +63,10 @@ The checked-in `results.json` reports the following prior run:
 
 | Target | Evaluation protocol | R² | MAE |
 |---|---|---:|---:|
-| Logic depth | Random 5-fold | 0.930 | 3.4 |
-| Logic depth | Leave-one-family-out | 0.651 | 8.1 |
-| Gate count (log target) | Random 5-fold | 0.763 | 36 |
-| Gate count | Leave-one-family-out | 0.404 | 72 |
+| Logic depth | Random 5-fold | 0.930 | 3.35 |
+| Logic depth | Leave-one-family-out | 0.643 | 8.09 |
+| Gate count (log target) | Random 5-fold | 0.770 | 35.83 |
+| Gate count | Leave-one-family-out | 0.407 | 71.16 |
 
 The leave-one-family-out results are the more meaningful generalization estimate for this synthetic corpus. Port-width-only controls perform nearly as well as the full feature set for depth on unseen families; see `size_control_results.json`. These results do **not** establish accuracy on real-world RTL or predict routed timing.
 
