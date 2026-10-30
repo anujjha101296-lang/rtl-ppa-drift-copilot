@@ -46,6 +46,24 @@ jobs:
           assert all(row.get("ok") for row in rows), "Some Yosys corpus jobs failed"
           print(f"Validated {len(rows)} synthesized designs")
           PY
+      - name: Smoke-test prediction and verified drift CLI
+        run: |
+          python - <<'PY'
+          import ast, json, subprocess
+          manifest = json.load(open("designs/manifest.json"))
+          # Use distinct generated designs to exercise both inference and Yosys verification.
+          paths = [f"designs/{row['name']}.v" for row in manifest[:2]]
+          pred = subprocess.run(["python", "copilot.py", "predict", paths[0]],
+                                check=True, text=True, capture_output=True)
+          values = ast.literal_eval(pred.stdout.strip())
+          assert set(values) == {"depth", "cells"}, values
+          assert all(isinstance(v, (int, float)) and v > 0 for v in values.values()), values
+          drift = subprocess.run(["python", "copilot.py", "drift", *paths, "--verify"],
+                                 check=True, text=True, capture_output=True)
+          assert "actual (Yosys/ABC)" in drift.stdout, drift.stdout
+          print("CLI prediction and Yosys/ABC verified drift passed")
+          print(drift.stdout)
+          PY
       - name: Upload reproducibility artifacts
         uses: actions/upload-artifact@v4
         with:
