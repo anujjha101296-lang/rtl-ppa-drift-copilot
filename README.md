@@ -1,31 +1,82 @@
-# RTL-PPA Drift Copilot
-Predict post-synthesis logic depth and gate count from the *pre-synthesis* RTL graph, and flag regressions between RTL revisions.
+# RTL PPA Drift Copilot
 
-Pipeline: `gen_designs.py` (315 parameterized designs, 29 families) -> `run_synth.py` (Yosys `synth` + ABC gate map; ground truth = `ltp` depth, cell count; coarse-cell graph exported as JSON) -> `features.py` (77 graph features: cell-type counts/widths, 4 weighted longest paths, fanout, ports ...) -> `train_eval.py` (GradientBoosting, baselines, 2 CV protocols) -> `size_control.py` (feature-subset control) -> `pairwise_rank.py` -> `copilot.py` (`predict`, `drift old.v new.v [--verify]`).
+Predict post-synthesis logic depth and mapped gate count from a **pre-synthesis Yosys RTL graph**, then compare two RTL revisions for likely structural regressions.
 
-Run: `python3 gen_designs.py && python3 run_synth.py && python3 train_eval.py && python3 size_control.py && python3 pairwise_rank.py`  (needs yosys, scikit-learn, networkx)
+> **Reproducibility status:** The checked-in `dataset.json` and result JSON files are historical result snapshots. The generated RTL corpus, pre-synthesis graph JSON files, and trained `model.pkl` are intentionally generated locally/CI and are not included in a fresh clone. Run the full pipeline below before using the prediction CLI. Reported metrics are historical until reproduced in your own toolchain.
 
-| target | protocol | R2 | MAE | within +-2 levels |
-|---|---|---|---|---|
-| depth | random 5-fold | 0.930 | 3.4 | 49.2% |
-| depth | leave-one-family-out | 0.651 | 8.1 | 23.5% |
-| cells (log target) | random 5-fold | 0.763 | 36 | - |
-| cells | leave-one-family-out | 0.404 | 72 | - |
-Mean-predictor baseline: R2 ~ 0 (depth MAE ~16).
+## Pipeline
 
-## Control: how much is just design size?
-Same model and folds, different feature subsets (`size_control_results.json`):
-| features | depth R2 random | depth R2 family-held-out | gate-count R2 family-held-out |
-|---|---|---|---|
-| input + output bit counts only | 0.717 | 0.645 | 0.286 |
-| ports + cells + edges + widths | 0.789 | 0.433 | 0.226 |
-| everything except ports | 0.848 | 0.353 | 0.186 |
-| structure only (type counts + path features) | 0.857 | 0.223 | 0.103 |
-| all 77 features | 0.930 | 0.651 | 0.404 |
+1. `gen_designs.py` generates 315 parameterized RTL designs across 29 synthetic design families and writes `designs/manifest.json`.
+2. `run_synth.py` uses Yosys to export pre-synthesis coarse-cell graphs and collect post-synthesis ABC gate-count / logic-depth labels.
+3. `train_eval.py` extracts structural features, evaluates baselines and models using random 5-fold and leave-one-family-out splits, then writes `model.pkl`, `results.json`, and `parity.png`.
+4. `copilot.py` predicts for a new RTL module or compares two revisions. Input RTL must define a top module named `top`.
 
-**Reading:** for depth on unseen families, port width alone matches the full model (0.645 vs 0.651), so the structural features add nothing there. They do help in-distribution (0.72 -> 0.93), for gate count (0.29 -> 0.40), and for cross-family pairwise ranking (depth 78.9% -> 84.4%, gate count 75.1% -> 86.8%).
+## Requirements
 
-Limits: synthetic parametric corpus; depth is not delay; the family-held-out numbers are the honest ones. Ridge diverges under family hold-out (not reported). The model is gradient boosting on graph features, not a GNN. The `drift` demo designs were in the training set.
+- Python 3.10+
+- Yosys with ABC support
+- Python packages in `requirements.txt`
 
-## GNN variant (UNTESTED - needs a machine with working PyTorch)
-`gnn_train.py` trains a 4-layer message-passing GNN on the RTL cell graphs and compares it with gradient boosting on identical family-grouped 6-fold CV. Syntax-checked only; no results yet. Run after `run_synth.py`: `pip install torch && python3 gnn_train.py`.
+Install Python dependencies:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+Install Yosys using your OS package manager. On Ubuntu:
+
+```bash
+sudo apt-get update
+sudo apt-get install -y yosys
+```
+
+## Rebuild the dataset and model from scratch
+
+Run from this repository directory:
+
+```bash
+python gen_designs.py
+python run_synth.py
+python train_eval.py
+```
+
+The pipeline creates `designs/`, `graphs/`, `model.pkl`, `results.json`, and `parity.png`. The corpus is synthetic and designed for controlled experiments; it is not a substitute for validation on independent industrial RTL or physical timing data.
+
+## Use the CLI
+
+Create a file such as `example.v` with a module named `top`, then:
+
+```bash
+python copilot.py predict example.v
+python copilot.py drift old.v new.v
+python copilot.py drift old.v new.v --verify
+```
+
+`--verify` runs Yosys/ABC to compare predictions with actual synthesis results for the supplied files.
+
+## Historical benchmark snapshot
+
+The checked-in `results.json` reports the following prior run:
+
+| Target | Evaluation protocol | R² | MAE |
+|---|---|---:|---:|
+| Logic depth | Random 5-fold | 0.930 | 3.4 |
+| Logic depth | Leave-one-family-out | 0.651 | 8.1 |
+| Gate count (log target) | Random 5-fold | 0.763 | 36 |
+| Gate count | Leave-one-family-out | 0.404 | 72 |
+
+The leave-one-family-out results are the more meaningful generalization estimate for this synthetic corpus. Port-width-only controls perform nearly as well as the full feature set for depth on unseen families; see `size_control_results.json`. These results do **not** establish accuracy on real-world RTL or predict routed timing.
+
+## Known limitations
+
+- Synthetic parameterized corpus; external RTL validation is still required.
+- Logic depth is a mapped logic-level proxy, not static timing analysis or routed delay.
+- `gnn_train.py` is experimental and requires PyTorch; it is not part of the validated baseline.
+- The generated model and graph files are not checked in. Rebuild them using the documented pipeline.
+
+## License
+
+See `LICENSE`.
