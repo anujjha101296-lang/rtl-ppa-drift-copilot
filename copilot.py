@@ -7,7 +7,13 @@ import sys, os, pickle, subprocess, re, tempfile
 import numpy as np
 from features import extract
 HERE = os.path.dirname(os.path.abspath(__file__))
-M = pickle.load(open(os.path.join(HERE, "model.pkl"), "rb"))["models"]
+MODEL_PATH = os.path.join(HERE, "model.pkl")
+if not os.path.isfile(MODEL_PATH):
+    raise SystemExit(
+        "Missing model.pkl. Rebuild the model first: "
+        "python gen_designs.py && python run_synth.py && python train_eval.py"
+    )
+M = pickle.load(open(MODEL_PATH, "rb"))["models"]
 
 def graph_json(v):
     t = tempfile.mktemp(suffix=".json")
